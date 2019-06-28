@@ -7,16 +7,16 @@
     "test": "test"
   },
   "scripts": {
-    "test": "nyc --reporter=html --reporter=text mocha test/test-*.js",
+    "test": "nyc --check-coverage --cache=true --branches=100 --functions=100 --lines=100 --statements=100 --reporter=html --reporter=text mocha test/test-*.js",
     "tap": "mocha --reporter=tap test/test-*.js"
   },
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@sinonjs/referee": "~3.2.0",
     "mocha": "~6.1.4",
     "murmurhash3js-revisited": "~3.0.0",
-    "nyc": "~14.1.1",
-    "referee": "~1.2.0"
+    "nyc": "~14.1.1"
   },
   "dependencies": {}
 }

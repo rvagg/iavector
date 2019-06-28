@@ -65,6 +65,8 @@ Height
        Tail chain: ii → D → j → 30(full)
 ```
 
+FIXME: not quite right, doesn't deal with bounds
+
 ```js
 function dataIndex (width, height, i) {
   let ceil = width ** (height + 1)

@@ -33,8 +33,18 @@ class IAVector {
   }
 
   async get (index) {
-    let thisIndex = dataIndex(this.width, this.height, index)
-    if (thisIndex > this.data.length - 1) {
+    if (index < 0) {
+      return undefined
+    }
+
+    let thisMax = this.width ** (this.height + 1) // TODO: cache this?
+    if (index > thisMax) {
+      return undefined
+    }
+
+    let children = this.width ** this.height // TODO: cache this?
+    let thisIndex = Math.floor(index / children)
+    if (thisIndex >= this.data.length) {
       return undefined
     }
 
@@ -42,8 +52,9 @@ class IAVector {
       return this.data[thisIndex]
     }
 
+    let nextHeightIndex = index % children
     // recursive
-    return (await load(this.store, this.data[thisIndex], this.width, this.height - 1)).get(index)
+    return (await load(this.store, this.data[thisIndex], this.width, this.height - 1)).get(nextHeightIndex)
   }
 
   async push (value) {
@@ -111,12 +122,6 @@ IAVector.isIAVector = function isIAVector (node) {
   return node instanceof IAVector
 }
 
-function dataIndex (width, height, i) {
-  let ceil = width ** (height + 1)
-  let floor = width ** height
-  return Math.floor((i % ceil) / floor)
-}
-
 // store a new node and assign it an ID
 async function save (store, newNode) {
   let id = await store.save(newNode.toSerializable())
@@ -138,16 +143,16 @@ function isSerializable (serializable) {
 
 function fromSerializable (store, id, serializable, expectedWidth, expectedHeight) {
   if (!isSerializable(serializable)) {
-    throw new Error('Object does not appear to be an IAVector node')
+    throw new Error('Object is not a valid IAVector node')
   }
   if (typeof expectedWidth === 'number') {
     if (serializable.width !== expectedWidth) {
-      throw new Error(`IAVector node does not have expected width ${expectedWidth}`)
+      throw new Error(`IAVector node does not have expected width of ${expectedWidth}`)
     }
   }
   if (typeof expectedHeight === 'number') {
     if (serializable.height !== expectedHeight) {
-      throw new Error(`IAVector node does not have expected height ${expectedHeight}`)
+      throw new Error(`IAVector node does not have expected height of ${expectedHeight}`)
     }
   }
   let node = new IAVector(store, serializable.width, serializable.height, serializable.data)
@@ -189,11 +194,13 @@ async function * traverseNodes (root) {
   }
 }
 
+/* istanbul ignore next */
 const dummyStore = { load () {}, save () {}, isEqual () { return false } }
 
 class ValuesTraversal {
   constructor (rootBlock) {
     this._stack = []
+    this._width = null
     this._height = null
     this.next(rootBlock)
   }
@@ -237,13 +244,17 @@ class ValuesTraversal {
    * returned from {@link ValuesTraversal#traverse}.
    */
   next (block) {
-    // if we have nulls, this is the first block
+    // if we have nulls, this is the first block, for the rest the width has to be consistent and the height has to
+    // be correct for where we are in the tree
     let expectedWidth = this._width === null ? block.width : this._width
     let expectedHeight = this._height === null ? block.height : this._height - 1
     let node = IAVector.isIAVector(block)
       ? block
       : fromSerializable(dummyStore, 0, block, expectedWidth, expectedHeight)
     this._height = node.height // height--, down toward the leaves
+    if (this._width === null) {
+      this._width = node.width
+    }
     this._stack.push({ node, nextLink: this._nextLink(node, -1) })
   }
 
@@ -263,3 +274,4 @@ class ValuesTraversal {
 }
 
 module.exports.create = create
+module.exports.fromSerializable = fromSerializable
