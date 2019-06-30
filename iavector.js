@@ -1,8 +1,31 @@
 // Copyright Rod Vagg; Licensed under the Apache License, Version 2.0, see README.md for more information
 
-async function create (store, width = 32) {
-  let newNode = new IAVector(store, width)
-  return save(store, newNode)
+async function create (store, width = 32, from) {
+  if (!from || Array.isArray(from) && from.length === 0) {
+    let newNode = new IAVector(store, width)
+    return save(store, newNode)
+  } else if (Array.isArray(from)) {
+    return createFromArray(store, width, from)
+  } else {
+    throw new TypeError('Unsupported `from` type')
+  }
+}
+
+async function createFromArray (store, width, values) {
+  for (let height = 0; ; height++) {
+    let nodesAtHeight = Math.ceil(values.length / width)
+    let newValues = []
+    for (let i = 0; i < nodesAtHeight; i++) {
+      let data = values.slice(i * width, Math.min((i + 1) * width, values.length))
+      let newNode = new IAVector(store, width, height, data)
+      newNode = await save(store, newNode)
+      newValues.push(newNode.id)
+      if (nodesAtHeight === 1) {
+        return newNode
+      }
+    }
+    values = newValues
+  }
 }
 
 class IAVector {

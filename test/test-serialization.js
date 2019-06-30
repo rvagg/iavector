@@ -45,9 +45,10 @@ describe('Serialization', () => {
 
   it('basic load()s', async () => {
     let data = Array.apply(null, new Array(10)).map((_, i) => `v${i}`)
-    let serialized = { width: 10, height: 0, data }
+    let serialized = { width: 10, height: 0, data: data.slice() }
     let vector = iavector.fromSerializable(memoryStore(), undefined, Object.assign(serialized))
 
+    serialized.data = data.slice() // new copy just to be sure
     assert.equals(vector.toSerializable(), serialized)
 
     for (let i = 0; i < 10; i++) {

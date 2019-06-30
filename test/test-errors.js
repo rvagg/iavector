@@ -43,4 +43,8 @@ describe('Errors', async () => {
       await throws(() => iavector.fromSerializable(store, 0, serializable, expectedWidth, expectedHeight), expectedRe)
     }
   })
+
+  it('from non-array', async () => {
+    await rejects(iavector.create(memoryStore(), 4, 'not an array'), /Unsupported `from` type/)
+  })
 })
