@@ -16,12 +16,14 @@ describe(`Basic ${fixture.length} element usage`, () => {
       let vector
 
       before(async () => {
-        vector = await iavector.create(memoryStore(), width === 32 ? undefined : width) // test default=32
+        vector = await iavector.create(memoryStore(), width === 256 ? undefined : width) // test default=32
       })
 
       it(`push() w/ get() and values() while building`, async () => {
+        assert.equals(await vector.size(), 0)
         for (let i = 0; i < fixture.length; i++) {
           vector = await vector.push(fixture[i])
+          assert.equals(await vector.size(), i + 1)
 
           for (let j = 0; j < i; j++) {
             assert.equals(await vector.get(j), fixture[j], `vector.get(${i})`)
@@ -86,8 +88,8 @@ describe(`Basic ${fixture.length} element usage`, () => {
   testWithWidth(2, { expectedMaxHeight: 6 })
   testWithWidth(4, { expectedMaxHeight: 3 })
   testWithWidth(8, { expectedMaxHeight: 2 })
-  testWithWidth(16, { expectedMaxHeight: 1 })
   testWithWidth(32, { expectedMaxHeight: 1 })
   testWithWidth(100, { expectedMaxHeight: 0 })
-  testWithWidth(200, { expectedMaxHeight: 0 })
+  testWithWidth(256, { expectedMaxHeight: 0 })
+  testWithWidth(300, { expectedMaxHeight: 0 })
 })
