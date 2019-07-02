@@ -139,6 +139,11 @@ dataIndexChain(3, 3, 0) → [ 0, 0, 0, 0 ]
 ### Contents
 
  * [`async iavector.create(store[, width][, from])`](#iavector__create)
+ * [`iavector.traverseGet *width, values[, store]`](#iavector__traverseGet____)
+ * [`class ConstructFrom`](#ConstructFrom)
+ * [`ConstructFrom#construct()`](#ConstructFrom_construct)
+ * [`ConstructFrom#saved()`](#ConstructFrom_saved)
+ * [`ConstructFrom#root()`](#ConstructFrom_root)
  * [`class IAVector`](#IAVector)
  * [`async IAVector#get(index)`](#IAVector_get)
  * [`async IAVector#push(value)`](#IAVector_push)
@@ -149,8 +154,8 @@ dataIndexChain(3, 3, 0) → [ 0, 0, 0, 0 ]
  * [`iavector.isSerializable(serializable)`](#iavector__isSerializable)
  * [`iavector.fromSerializable(store, id, serializable[, expectedWidth][, expectedHeight])`](#iavector__fromSerializable)
  * [`iavector.traverseValues(rootBlock)`](#iavector__traverseValues)
- * [`iamap.traverseGet(rootBlock, index)`](#iamap__traverseGet)
- * [`iamap.traverseSize(rootBlock)`](#iamap__traverseSize)
+ * [`iavector.traverseGet(rootBlock, index)`](#iavector__traverseGet)
+ * [`iavector.traverseSize(rootBlock)`](#iavector__traverseSize)
  * [`class ValuesTraversal`](#ValuesTraversal)
  * [`ValuesTraversal#traverse()`](#ValuesTraversal_traverse)
  * [`ValuesTraversal#next(block)`](#ValuesTraversal_next)
@@ -159,6 +164,7 @@ dataIndexChain(3, 3, 0) → [ 0, 0, 0, 0 ]
  * [`GetTraversal#traverse()`](#GetTraversal_traverse)
  * [`GetTraversal#next(block)`](#GetTraversal_next)
  * [`GetTraversal#value()`](#GetTraversal_value)
+ * [`traverseGetOne(node, index)`](#traverseGetOne)
  * [`class SizeTraversal`](#SizeTraversal)
  * [`SizeTraversal#traverse()`](#SizeTraversal_traverse)
  * [`SizeTraversal#next(block)`](#SizeTraversal_next)
@@ -187,6 +193,49 @@ the root node and any child nodes required if a `from` argument is supplied.
   have, at most, `width` child nodes, or `width` values at the leaves.
 * **`from`** _(`Array`, optional)_: An optional Array to marshall into an `IAVector`. Each element of the `from` array will be
   stored at a leaf node, in order. If no `from` argument is supplied, a zero-length `IAVector` is returned.
+
+<a name="iavector__traverseGet____"></a>
+### `iavector.traverseGet *width, values[, store]`
+
+Perform a synchronous block-by-block creation of a new `IAVector` give a set of `values` to be stored in nodes with
+`width` elements. Returns a [`ConstructFrom`](#ConstructFrom) object for performing the save operation.
+
+If `store` is not provied, an internal non-functioning "dummy store" will be used and the resulting `IAVector`s,
+including the new root won't be able to perform standard functions such as `get()` and `append()`, although they will
+be suitable for serialisation.
+
+**Parameters:**
+
+* **`width`** _(`number`)_: The width to be used for each `IAVector` node, see [`iavector.create`](#iavector__create).
+* **`values`** _(`Array`)_: The values to be stored in the new `IAVector` structure.
+* **`store`** _(`Object`, optional)_: The backing store to be used for new `IAVector` nodes.
+
+**Return value** : A [`ConstructFrom`](#ConstructFrom) object to perform the creation block-by-block
+
+<a name="ConstructFrom"></a>
+### `class ConstructFrom`
+
+A construction object for synchronous block-by-block creation of a new `IAVector` given a list of `values` to be
+distributed over `width` sized blocks.
+
+Call the `construct()` generator and for each node yielded, save and send the saved node back with the `saved(node)`
+function. Continue to call `construct()` until there are no more nodes yielded, whereupon `root()` will provide the root
+node which should also be the last provided node via `saved(node)`.
+
+<a name="ConstructFrom_construct"></a>
+### `ConstructFrom#construct()`
+
+TODO
+
+<a name="ConstructFrom_saved"></a>
+### `ConstructFrom#saved()`
+
+TODO
+
+<a name="ConstructFrom_root"></a>
+### `ConstructFrom#root()`
+
+TODO
 
 <a name="IAVector"></a>
 ### `class IAVector`
@@ -329,28 +378,28 @@ proceed.
 **Return value** : A [`ValuesTraversal`](#ValuesTraversal) object for performing the traversal block-by-block and collecting their
   values.
 
-<a name="iamap__traverseGet"></a>
-### `iamap.traverseGet(rootBlock, index)`
+<a name="iavector__traverseGet"></a>
+### `iavector.traverseGet(rootBlock, index)`
 
 Perform a per-block synchronous traversal as a `get()` operation. Takes a root block, the index being looked
 up and returns a [`GetTraversal`](#GetTraversal) object for performing traversals block-by-block.
 
 **Parameters:**
 
-* **`rootBlock`** _(`Object`)_: The root block, for extracting the IAMap configuration data
+* **`rootBlock`** _(`Object`)_: The root block, for extracting the `IAVector` configuration data
 * **`index`** _(`number`)_: an index to look up.
 
 **Return value** : A [`GetTraversal`](#GetTraversal) object for performing the traversal block-by-block.
 
-<a name="iamap__traverseSize"></a>
-### `iamap.traverseSize(rootBlock)`
+<a name="iavector__traverseSize"></a>
+### `iavector.traverseSize(rootBlock)`
 
 Perform a per-block synchronous traversal as a `size()` operation. Takes a root block and returns a
 [`SizeTraversal`](#SizeTraversal) object for performing traversals block-by-block.
 
 **Parameters:**
 
-* **`rootBlock`** _(`Object`)_: The root block, for extracting the IAMap configuration data
+* **`rootBlock`** _(`Object`)_: The root block, for extracting the `IAVector` configuration data
 
 **Return value** : A [`SizeTraversal`](#SizeTraversal) object for performing the traversal block-by-block.
 
@@ -416,6 +465,22 @@ Provide the next block required for traversal.
 Get the final value of the traversal, if one has been found.
 
 **Return value** : A value, if one has been found, otherwise `undefined` (if one has not been found or we are mid-traversal)
+
+<a name="traverseGetOne"></a>
+### `traverseGetOne(node, index)`
+
+Perform a `get()` on a single `IAVector` node. Returns either an indication of an OOB, a `value` if the `index` is
+found within this node, or a continuation descriptor for proceeding with the look up on a child block.
+
+**Parameters:**
+
+* **`node`** _(`Object`)_: An `IAVector` node, or a serialized form of one.
+* **`index`** _(`number`)_: The index to look up in this node.
+
+**Return value**  _(`Object`)_: Either `null` if OOB, an object with a `value` property with a found value, or an object with the
+  form `{ nextId, nextHeight, nextIndex }`, where `nextId` is the next block needed for a traversal, `nextHeight` is
+  the expected height of the node identified by `nextId` and `nextIndex` being the index to continue the look-up such
+  that a `traverseGetOne(node, index)` on the `node` identified by `nextId` uses `nextIndex` as the `index` value.
 
 <a name="SizeTraversal"></a>
 ### `class SizeTraversal`

@@ -30,27 +30,94 @@ async function create (store, width = 256, from) {
     let newNode = new IAVector(store, width)
     return save(store, newNode)
   } else if (Array.isArray(from)) {
-    return createFromArray(store, width, from)
+    return createFromArray(store, from, width)
   } else {
     throw new TypeError('Unsupported `from` type')
   }
 }
 
-async function createFromArray (store, width, values) {
-  for (let height = 0; ; height++) {
-    let nodesAtHeight = Math.ceil(values.length / width)
-    let newValues = []
-    for (let i = 0; i < nodesAtHeight; i++) {
-      let data = values.slice(i * width, Math.min((i + 1) * width, values.length))
-      let newNode = new IAVector(store, width, height, data)
-      newNode = await save(store, newNode)
-      newValues.push(newNode.id)
-      if (nodesAtHeight === 1) {
-        return newNode
-      }
-    }
-    values = newValues
+/**
+ * Perform a synchronous block-by-block creation of a new `IAVector` give a set of `values` to be stored in nodes with
+ * `width` elements. Returns a {@link ConstructFrom} object for performing the save operation.
+ *
+ * If `store` is not provied, an internal non-functioning "dummy store" will be used and the resulting `IAVector`s,
+ * including the new root won't be able to perform standard functions such as `get()` and `append()`, although they will
+ * be suitable for serialisation.
+ *
+ * @name iavector.traverseGet *
+ * @param {number} width The width to be used for each `IAVector` node, see {@link iavector.create}.
+ * @param {Array} values The values to be stored in the new `IAVector` structure.
+ * @param {Object} [store] The backing store to be used for new `IAVector` nodes.
+ * @returns A {@link ConstructFrom} object to perform the creation block-by-block
+ */
+function constructFrom (values, width = 256, store = dummyStore) {
+  return new ConstructFrom(values, width, store)
+}
+
+/**
+ * A construction object for synchronous block-by-block creation of a new `IAVector` given a list of `values` to be
+ * distributed over `width` sized blocks.
+ *
+ * Call the `construct()` generator and for each node yielded, save and send the saved node back with the `saved(node)`
+ * function. Continue to call `construct()` until there are no more nodes yielded, whereupon `root()` will provide the root
+ * node which should also be the last provided node via `saved(node)`.
+ */
+class ConstructFrom {
+  constructor (values, width, store) {
+    this._nextValues = values
+    this._width = width
+    this._height = 0
+    this._store = store
   }
+
+  /**
+   * TODO
+   */
+  * construct () {
+    if (this._nextValues.length === 1 && this._height !== 0) {
+      this._root = this._nextValues[0]
+      return
+    }
+    // save values at height=0, save child node ids at height>0
+    let values = this._height === 0 ? this._nextValues : this._nextValues.map((n) => n.id)
+    this._nextValues = []
+    // divide up the values into this._width length blocks
+    let nodesAtHeight = Math.ceil(values.length / this._width)
+    for (let i = 0; i < nodesAtHeight; i++) {
+      let data = values.slice(i * this._width, Math.min((i + 1) * this._width, values.length))
+      yield new IAVector(this._store, this._width, this._height, data)
+    }
+    this._height++
+  }
+
+  /**
+   * TODO
+   */
+  saved (node) {
+    this._nextValues.push(node)
+  }
+
+  /**
+   * TODO
+   */
+  root () {
+    return this._root
+  }
+}
+
+async function createFromArray (store, values, width) {
+  const construction = constructFrom(values, width, store)
+  while (true) {
+    let c = 0
+    for (let node of construction.construct()) {
+      c++
+      construction.saved(await save(store, node))
+    }
+    if (c === 0) {
+      break
+    }
+  }
+  return construction.root()
 }
 
 /**
@@ -136,7 +203,8 @@ class IAVector {
     let mutatedExisting = false
     while ((tail = tailChain.pop())) {
       if (mutatedExisting || tail.data.length < this.width) {
-        // mutate
+        // at the tail we either have space to fit a new one in, or we've mutated a child
+        // and just need to replace the ref
         let newData = tail.height === 0 || !mutatedExisting ? tail.data.slice() : tail.data.slice(0, -1)
         newData.push(tail.height === 0 ? value : node.id)
         node = await save(this.store, new IAVector(this.store, this.width, tail.height, newData))
@@ -337,9 +405,9 @@ function traverseValues (rootBlock) {
  * Perform a per-block synchronous traversal as a `get()` operation. Takes a root block, the index being looked
  * up and returns a {@link GetTraversal} object for performing traversals block-by-block.
  *
- * @name iamap.traverseGet
+ * @name iavector.traverseGet
  * @function
- * @param {Object} rootBlock The root block, for extracting the IAMap configuration data
+ * @param {Object} rootBlock The root block, for extracting the `IAVector` configuration data
  * @param {number} index an index to look up.
  * @returns A {@link GetTraversal} object for performing the traversal block-by-block.
  */
@@ -351,9 +419,9 @@ function traverseGet (rootBlock, index) {
  * Perform a per-block synchronous traversal as a `size()` operation. Takes a root block and returns a
  * {@link SizeTraversal} object for performing traversals block-by-block.
  *
- * @name iamap.traverseSize
+ * @name iavector.traverseSize
  * @function
- * @param {Object} rootBlock The root block, for extracting the IAMap configuration data
+ * @param {Object} rootBlock The root block, for extracting the `IAVector` configuration data
  * @returns A {@link SizeTraversal} object for performing the traversal block-by-block.
  */
 function traverseSize (rootBlock) {
@@ -389,7 +457,14 @@ async function * traverseNodes (root) {
 }
 
 /* istanbul ignore next */
-const dummyStore = { load () {}, save () {} }
+const dummyStore = {
+  load () {
+    throw new Error('load() not implemented on dummy store')
+  },
+  save () {
+    throw new Error('save() not implemented on dummy store')
+  }
+}
 
 /**
  * An `ValuesTraversal` object is returned by the {@link iavector.traverseValues} function for performing
@@ -490,30 +565,21 @@ class GetTraversal {
    * {@link GetTraversal#value}) or the value doesn't exist.
    */
   traverse () {
-    if (this._index < 0) { // -OOB
+    let t = traverseGetOne(this._node, this._index)
+
+    if (!t) { // probably OOB
       return null
     }
 
-    let thisMax = this._node.width ** (this._node.height + 1)
-    if (this._index > thisMax) { // OOB
+    if (t.value !== undefined) { // found
+      this._value = t.value
       return null
     }
 
-    let children = this._node.width ** this._node.height
-    let thisIndex = Math.floor(this._index / children)
-    if (thisIndex >= this._node.data.length) {
-      return null
-    }
-
-    if (this._node.height === 0) {
-      // found
-      this._value = this._node.data[thisIndex]
-      return null
-    }
-
-    this._index = this._index % children
-    this._height--
-    return this._node.data[thisIndex] // link to next
+    // need another block
+    this._index = t.nextIndex
+    this._height = t.nextHeight
+    return t.nextId
   }
 
   /**
@@ -537,14 +603,52 @@ class GetTraversal {
 }
 
 /**
+ * Perform a `get()` on a single `IAVector` node. Returns either an indication of an OOB, a `value` if the `index` is
+ * found within this node, or a continuation descriptor for proceeding with the look up on a child block.
+ *
+ * @param {Object} node An `IAVector` node, or a serialized form of one.
+ * @param {number} index The index to look up in this node.
+ * @returns {Object} Either `null` if OOB, an object with a `value` property with a found value, or an object with the
+ * form `{ nextId, nextHeight, nextIndex }`, where `nextId` is the next block needed for a traversal, `nextHeight` is
+ * the expected height of the node identified by `nextId` and `nextIndex` being the index to continue the look-up such
+ * that a `traverseGetOne(node, index)` on the `node` identified by `nextId` uses `nextIndex` as the `index` value.
+ */
+function traverseGetOne (node, index) {
+  if (index < 0) { // -OOB
+    return null
+  }
+
+  let thisMax = node.width ** (node.height + 1)
+  if (index > thisMax) { // OOB
+    return null
+  }
+
+  let children = node.width ** node.height
+  let thisIndex = Math.floor(index / children)
+  if (thisIndex >= node.data.length) {
+    return null
+  }
+
+  if (node.height === 0) {
+    // found
+    return { value: node.data[thisIndex] }
+  }
+
+  let nextId = node.data[thisIndex] // link to next
+  let nextHeight = node.height - 1
+  let nextIndex = index % children
+
+  return { nextId, nextHeight, nextIndex }
+}
+
+/**
  * An `SizeTraversal` object is returned by the {@link iavector.traverseSize} function for performing
  * block-by-block traversals on an `IAVector`.
  */
 class SizeTraversal {
-  constructor (rootBlock, precache) {
+  constructor (rootBlock) {
     this._node = fromSerializable(dummyStore, 0, rootBlock)
     this._size = rootBlock.width ** (rootBlock.height + 1) // max size
-    this._precache = precache
   }
 
   /**
@@ -555,7 +659,7 @@ class SizeTraversal {
    * {@link SizeTraversal#value})
    */
   traverse () {
-    // TODO: do we block this from running twice? `traverse()` is not idempotent in any traversal case
+    // TODO: should we block this from running twice? `traverse()` is not idempotent in any traversal case
     // remove from max size the number of unfilled nodes at this left side of the tree
     this._size -= this._node.width ** this._node.height * (this._node.width - this._node.data.length)
     if (this._node.height === 0) {
@@ -588,7 +692,10 @@ class SizeTraversal {
 }
 
 module.exports.create = create
+module.exports.constructFrom = constructFrom
 module.exports.fromSerializable = fromSerializable
+module.exports.isSerializable = isSerializable
 module.exports.traverseValues = traverseValues
 module.exports.traverseGet = traverseGet
+module.exports.traverseGetOne = traverseGetOne
 module.exports.traverseSize = traverseSize

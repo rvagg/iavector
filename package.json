@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "standard **/*.js && nyc --check-coverage --cache=true --branches=100 --functions=100 --lines=100 --statements=100 --reporter=html --reporter=text mocha test/test-*.js",
+    "test": "standard *.js **/*.js && nyc --check-coverage --cache=true --branches=100 --functions=100 --lines=100 --statements=100 --reporter=html --reporter=text mocha test/test-*.js",
     "tap": "mocha --reporter=tap test/test-*.js",
     "docs": "jsdoc4readme --readme iavector.js"
   },

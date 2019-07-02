@@ -1,4 +1,5 @@
 const murmurhash3 = require('murmurhash3js-revisited')
+const { assert } = require('@sinonjs/referee')
 
 function hash (obj) {
   return murmurhash3.x86.hash32(Buffer.from(JSON.stringify(obj)))
@@ -25,4 +26,15 @@ function memoryStore () {
   }
 }
 
+function rejects (promise, messageRe) {
+  // referee has a garbage rejects()
+  return promise.then(() => {
+    throw new Error('Promise did not reject')
+  }, (e) => {
+    assert.isError(e)
+    assert.match(e.message, messageRe)
+  })
+}
+
 module.exports.memoryStore = memoryStore
+module.exports.rejects = rejects

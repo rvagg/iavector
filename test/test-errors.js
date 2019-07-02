@@ -1,20 +1,9 @@
 /* eslint-env mocha */
 
-const { assert } = require('@sinonjs/referee')
-const { memoryStore } = require('./common')
+const { memoryStore, rejects } = require('./common')
 const iavector = require('../')
 
 let Constructor
-
-function rejects (promise, messageRe) {
-  // referee has a garbage rejects()
-  return promise.then(() => {
-    throw new Error('Promise did not reject')
-  }, (e) => {
-    assert.isError(e)
-    assert.match(e.message, messageRe)
-  })
-}
 
 function throws (fn, messageRe) {
   return rejects((async () => fn())(), messageRe)
