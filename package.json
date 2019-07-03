@@ -1,11 +1,8 @@
 {
   "name": "iavector",
   "version": "0.0.0",
-  "description": "",
+  "description": "An **I**mmutable **A**synchronous **Map**.",
   "main": "iavector.js",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
     "test": "standard *.js **/*.js && nyc --check-coverage --cache=true --branches=100 --functions=100 --lines=100 --statements=100 --reporter=html --reporter=text mocha test/test-*.js",
     "tap": "mocha --reporter=tap test/test-*.js",
@@ -21,5 +18,9 @@
     "nyc": "~14.1.1",
     "standard": "~12.0.1"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rvagg/iamap.git"
+  }
 }
