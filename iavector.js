@@ -188,6 +188,19 @@ class IAVector {
   }
 
   /**
+   * Asynchronously emit the IDs of this `IAVector` and all of its children.
+   *
+   * @returns {AsyncIterator} An async iterator that yields the ID of this `IAVector` and all of its children.
+   * The type of ID is determined by the backing store which is responsible for generating IDs upon `save()` operations.
+   */
+  async * ids () {
+    yield this.id
+    for await (const node of traverseNodes(this)) {
+      yield node.id
+    }
+  }
+
+  /**
    * Returns a serialisable form of this `IAVector` node. The internal representation of this local node is copied into
    * a plain JavaScript `Object` including a representation of its `data` array which will either contain raw values (for
    * `height` of `0`) or IDs of child nodes (for `height` of greater than `0`).
@@ -231,6 +244,19 @@ async function save (store, newNode) {
   return newNode
 }
 
+/**
+ * ```js
+ * let vector = await iavector.load(store, id)
+ * ```
+ *
+ * Create an IAVector instance loaded from a serialised form in a backing store. See {@link iavector.create}.
+ *
+ * @name iavector.load
+ * @function
+ * @async
+ * @param {Object} store - A backing store for this Vector. See {@link iavector.create}.
+ * @param id - An content address / ID understood by the backing `store`.
+ */
 async function load (store, id, expectedWidth, expectedHeight) {
   let serialized = await store.load(id)
   return fromSerializable(store, id, serialized, expectedWidth, expectedHeight)
@@ -278,12 +304,12 @@ function fromSerializable (store, id, serializable, expectedWidth, expectedHeigh
   }
   if (typeof expectedWidth === 'number') {
     if (serializable.width !== expectedWidth) {
-      throw new Error(`IAVector node does not have expected width of ${expectedWidth}`)
+      throw new Error(`IAVector node does not have expected width of ${expectedWidth} (${serializable.width})`)
     }
   }
   if (typeof expectedHeight === 'number') {
     if (serializable.height !== expectedHeight) {
-      throw new Error(`IAVector node does not have expected height of ${expectedHeight}`)
+      throw new Error(`IAVector node does not have expected height of ${expectedHeight} (${serializable.height})`)
     }
   }
   if (IAVector.isIAVector(serializable)) {
@@ -693,6 +719,7 @@ function ro (obj, prop, value) {
 }
 
 module.exports.create = create
+module.exports.load = load
 module.exports.constructFrom = constructFrom
 module.exports.fromSerializable = fromSerializable
 module.exports.isSerializable = isSerializable

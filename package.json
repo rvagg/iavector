@@ -4,18 +4,20 @@
   "description": "An **I**mmutable **A**synchronous **Map**.",
   "main": "iavector.js",
   "scripts": {
-    "test": "standard *.js **/*.js && nyc --check-coverage --cache=true --branches=100 --functions=100 --lines=100 --statements=100 --reporter=html --reporter=text mocha test/test-*.js",
-    "tap": "mocha --reporter=tap test/test-*.js",
+    "test:node": "hundreds mocha test/test-*.js",
+    "test:browser": "polendina --cleanup test/test-*.js",
+    "lint": "npx standard *.js test/test-*.js",
+    "test": "npm run lint && npm run test:node && npm run test:browser",
     "docs": "jsdoc4readme --readme iavector.js"
   },
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
   "license": "Apache-2.0",
   "devDependencies": {
     "@sinonjs/referee": "~3.2.0",
+    "hundreds": "0.0.2",
     "jsdoc4readme": "~1.1.2",
     "mocha": "~6.1.4",
     "murmurhash3js-revisited": "~3.0.0",
-    "nyc": "~14.1.1",
     "standard": "~12.0.1"
   },
   "dependencies": {},

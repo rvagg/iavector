@@ -144,8 +144,10 @@ dataIndexChain(3, 3, 0) → [ 0, 0, 0, 0 ]
  * [`async IAVector#push(value)`](#IAVector_push)
  * [`async IAVector#values()`](#IAVector_values)
  * [`async IAVector#nodes()`](#IAVector_nodes)
+ * [`async IAVector#ids()`](#IAVector_ids)
  * [`IAVector#toSerializable()`](#IAVector_toSerializable)
  * [`IAVector.isIAVector(node)`](#IAVector__isIAVector)
+ * [`async iavector.load(store, id)`](#iavector__load)
  * [`iavector.isSerializable(serializable)`](#iavector__isSerializable)
  * [`iavector.fromSerializable(store, id, serializable[, expectedWidth][, expectedHeight])`](#iavector__fromSerializable)
  * [`iavector.constructFrom(width, values[, store])`](#iavector__constructFrom)
@@ -255,6 +257,14 @@ take the form `{ id, node }`.
 
 **Return value**  _(`AsyncIterator`)_: An async iterator that yields nodes.
 
+<a name="IAVector_ids"></a>
+### `async IAVector#ids()`
+
+Asynchronously emit the IDs of this `IAVector` and all of its children.
+
+**Return value**  _(`AsyncIterator`)_: An async iterator that yields the ID of this `IAVector` and all of its children.
+  The type of ID is determined by the backing store which is responsible for generating IDs upon `save()` operations.
+
 <a name="IAVector_toSerializable"></a>
 ### `IAVector#toSerializable()`
 
@@ -284,6 +294,20 @@ Determine if an object is an instance of an `IAVector`
 * **`node`** _(`Object`)_
 
 **Return value**  _(`boolean`)_
+
+<a name="iavector__load"></a>
+### `async iavector.load(store, id)`
+
+```js
+let vector = await iavector.load(store, id)
+```
+
+Create an IAVector instance loaded from a serialised form in a backing store. See [`iavector.create`](#iavector__create).
+
+**Parameters:**
+
+* **`store`** _(`Object`)_: A backing store for this Vector. See [`iavector.create`](#iavector__create).
+* **`id`**: An content address / ID understood by the backing `store`.
 
 <a name="iavector__isSerializable"></a>
 ### `iavector.isSerializable(serializable)`
