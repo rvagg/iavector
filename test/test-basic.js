@@ -19,7 +19,7 @@ describe(`Basic ${fixture.length} element usage`, () => {
         vector = await iavector.create(memoryStore(), width === 256 ? undefined : width) // test default=32
       })
 
-      it(`push() w/ get() and values() while building`, async () => {
+      it('push() w/ get() and values() while building', async () => {
         assert.equals(await vector.size(), 0)
         for (let i = 0; i < fixture.length; i++) {
           vector = await vector.push(fixture[i])
@@ -30,7 +30,7 @@ describe(`Basic ${fixture.length} element usage`, () => {
           }
 
           let j = 0
-          for await (let v of vector.values()) {
+          for await (const v of vector.values()) {
             assert.equals(v, fixture[j++], `vector.values() @ ${j}`)
           }
         }
@@ -46,17 +46,17 @@ describe(`Basic ${fixture.length} element usage`, () => {
       })
 
       it(`Blocks make sense (expecting maximum height of ${options.expectedMaxHeight})`, async () => {
-        let foundValues = []
-        let blocksWithHeightCount = [ 0, 0, 0, 0, 0, 0, 0 ]
-        let ids = [vector.id]
-        for await (let n of vector.nodes()) {
-          let block = n.node
+        const foundValues = []
+        const blocksWithHeightCount = [0, 0, 0, 0, 0, 0, 0]
+        const ids = [vector.id]
+        for await (const n of vector.nodes()) {
+          const block = n.node
           ids.push(n.id)
 
           blocksWithHeightCount[block.height]++
 
           if (block.height === 0) {
-            for (let v of block.data) {
+            for (const v of block.data) {
               assert.contains(fixture, v)
               refute.contains(foundValues, v)
               foundValues.push(v)
@@ -74,7 +74,7 @@ describe(`Basic ${fixture.length} element usage`, () => {
         assert.equals(foundValues.length, fixture.length, 'found all the values')
         assert.equals(blocksWithHeightCount.filter(Boolean).length, options.expectedMaxHeight, `only ${options.expectedMaxHeight} heights`)
         for (let i = 0; ; i++) {
-          let expectedHeightBlocks = Math.ceil(fixture.length / width ** (i + 1))
+          const expectedHeightBlocks = Math.ceil(fixture.length / width ** (i + 1))
           // the root block isn't in our list, so it's a special case
           if (expectedHeightBlocks === 1) {
             assert.equals(i, options.expectedMaxHeight, `expected maximum height is correct (sanity check) ${i} for width=${width}`)
@@ -87,7 +87,7 @@ describe(`Basic ${fixture.length} element usage`, () => {
         // check that .ids() spits out the right list, including the
         // _current_ id
         let i = 0
-        for await (let id of vector.ids()) {
+        for await (const id of vector.ids()) {
           assert.equals(id, ids[i++])
         }
         assert.equals(i, ids.length)

@@ -6,7 +6,7 @@ const iavector = require('../')
 
 describe('Serialization', () => {
   it('default identifier', () => {
-    let vector = iavector.fromSerializable(memoryStore(), undefined, { width: 8, height: 9, data: [] })
+    const vector = iavector.fromSerializable(memoryStore(), undefined, { width: 8, height: 9, data: [] })
     assert.same(vector.width, 8)
     assert.same(vector.height, 9)
     assert.same(vector.id, null)
@@ -34,7 +34,7 @@ describe('Serialization', () => {
 
     // overflow
 
-    let oldId = vector.id
+    const oldId = vector.id
     vector = await vector.push('v10')
     assert.same(vector.width, 10)
     assert.same(vector.height, 1)
@@ -44,9 +44,9 @@ describe('Serialization', () => {
   })
 
   it('basic load()s', async () => {
-    let data = Array.apply(null, new Array(10)).map((_, i) => `v${i}`)
-    let serialized = { width: 10, height: 0, data: data.slice() }
-    let vector = iavector.fromSerializable(memoryStore(), undefined, Object.assign(serialized))
+    const data = Array.apply(null, new Array(10)).map((_, i) => `v${i}`)
+    const serialized = { width: 10, height: 0, data: data.slice() }
+    const vector = iavector.fromSerializable(memoryStore(), undefined, Object.assign(serialized))
 
     serialized.data = data.slice() // new copy just to be sure
     assert.equals(vector.toSerializable(), serialized)

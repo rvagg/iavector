@@ -21,14 +21,14 @@ describe('Errors', async () => {
 
   it('serialization', async () => {
     const baddies = [
-      [ 'derp', 8, 9, /not a valid IAVector node/ ],
-      [ { width: 7, height: 9, data: [] }, 8, 9, /node does not have expected width/ ],
-      [ { width: 8, height: 7, data: [] }, 8, 9, /node does not have expected height/ ]
+      ['derp', 8, 9, /not a valid IAVector node/],
+      [{ width: 7, height: 9, data: [] }, 8, 9, /node does not have expected width/],
+      [{ width: 8, height: 7, data: [] }, 8, 9, /node does not have expected height/]
     ]
     const store = memoryStore()
 
-    for (let bad of baddies) {
-      let [ serializable, expectedWidth, expectedHeight, expectedRe ] = bad
+    for (const bad of baddies) {
+      const [serializable, expectedWidth, expectedHeight, expectedRe] = bad
       await throws(() => iavector.fromSerializable(store, 0, serializable, expectedWidth, expectedHeight), expectedRe)
     }
   })

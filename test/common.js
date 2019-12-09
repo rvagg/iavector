@@ -11,7 +11,7 @@ function memoryStore () {
     saves: 0,
     loads: 0,
     save (obj) { // this can be async
-      let id = hash(obj)
+      const id = hash(obj)
       this.map.set(id, obj)
       this.saves++
       return id

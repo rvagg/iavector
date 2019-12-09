@@ -27,7 +27,7 @@ const assert = require('assert')
  */
 async function create (store, width = 256, from) {
   if (!from || (Array.isArray(from) && from.length === 0)) {
-    let newNode = new IAVector(store, width)
+    const newNode = new IAVector(store, width)
     return save(store, newNode)
   } else if (Array.isArray(from)) {
     return createFromArray(store, from, width)
@@ -94,11 +94,11 @@ class IAVector {
   async get (index) {
     const traversal = traverseGet(this, index)
     while (true) {
-      let nextId = traversal.traverse()
+      const nextId = traversal.traverse()
       if (!nextId) {
         return traversal.value()
       }
-      let child = await this.store.load(nextId)
+      const child = await this.store.load(nextId)
       traversal.next(child)
     }
   }
@@ -110,7 +110,7 @@ class IAVector {
    * @param {*} value The value to append at `size() + 1`.
    */
   async push (value) {
-    let tailChain = (this._tailChain || await this._getTailChain()).slice()
+    const tailChain = (this._tailChain || await this._getTailChain()).slice()
     let tail
     let node = this
     // this will flip to true if we reach a point in the chain that has space to append
@@ -121,30 +121,30 @@ class IAVector {
       if (mutatedExisting || tail.data.length < this.width) {
         // at the tail we either have space to fit a new one in, or we've mutated a child
         // and just need to replace the ref
-        let newData = tail.height === 0 || !mutatedExisting ? tail.data.slice() : tail.data.slice(0, -1)
+        const newData = tail.height === 0 || !mutatedExisting ? tail.data.slice() : tail.data.slice(0, -1)
         newData.push(tail.height === 0 ? value : node.id)
         node = await save(this.store, new IAVector(this.store, this.width, tail.height, newData))
         mutatedExisting = true
       } else {
         // overflow
-        node = await save(this.store, new IAVector(this.store, this.width, tail.height, [ tail.height === 0 ? value : node.id ]))
+        node = await save(this.store, new IAVector(this.store, this.width, tail.height, [tail.height === 0 ? value : node.id]))
         mutatedExisting = false
       }
     }
 
     if (!mutatedExisting) {
       // top level overflow, new level needed, safe to assume the above operation produced a new 1-element node
-      return save(this.store, new IAVector(this.store, this.width, this.height + 1, [ this.id, node.id ]))
+      return save(this.store, new IAVector(this.store, this.width, this.height + 1, [this.id, node.id]))
     }
 
     return node
   }
 
   async size () {
-    let tailChain = (this._tailChain || await this._getTailChain()).slice()
+    const tailChain = (this._tailChain || await this._getTailChain()).slice()
     const traversal = traverseSize(tailChain.shift())
     while (true) {
-      let nextId = traversal.traverse()
+      const nextId = traversal.traverse()
       if (!nextId) {
         assert.strictEqual(tailChain.length, 0)
         return traversal.size()
@@ -156,9 +156,9 @@ class IAVector {
   async _getTailChain () {
     let chainHeight = this.height
     let node = this
-    this._tailChain = [ this ]
+    this._tailChain = [this]
     while (chainHeight-- > 0) {
-      let tailId = node.data[node.data.length - 1]
+      const tailId = node.data[node.data.length - 1]
       node = await load(this.store, tailId, this.width, chainHeight)
       this._tailChain.push(node)
     }
@@ -218,7 +218,7 @@ class IAVector {
    * child nodes, if any.
    */
   toSerializable () {
-    let r = {
+    const r = {
       height: this.height,
       width: this.width,
       data: this.data
@@ -239,7 +239,7 @@ IAVector.isIAVector = function isIAVector (node) {
 
 // store a new node and assign it an ID
 async function save (store, newNode) {
-  let id = await store.save(newNode.toSerializable())
+  const id = await store.save(newNode.toSerializable())
   ro(newNode, 'id', id)
   return newNode
 }
@@ -258,7 +258,7 @@ async function save (store, newNode) {
  * @param id - An content address / ID understood by the backing `store`.
  */
 async function load (store, id, expectedWidth, expectedHeight) {
-  let serialized = await store.load(id)
+  const serialized = await store.load(id)
   return fromSerializable(store, id, serialized, expectedWidth, expectedHeight)
 }
 
@@ -316,7 +316,7 @@ function fromSerializable (store, id, serializable, expectedWidth, expectedHeigh
     // should we check id?
     return serializable
   }
-  let node = new IAVector(store, serializable.width, serializable.height, serializable.data)
+  const node = new IAVector(store, serializable.width, serializable.height, serializable.data)
   if (id != null) {
     ro(node, 'id', id)
   }
@@ -327,7 +327,7 @@ async function createFromArray (store, values, width) {
   const construction = constructFrom(values, width, store)
   while (true) {
     let c = 0
-    for (let node of construction.construct()) {
+    for (const node of construction.construct()) {
       c++
       construction.saved(await save(store, node))
     }
@@ -382,12 +382,12 @@ class ConstructFrom {
       return
     }
     // save values at height=0, save child node ids at height>0
-    let values = this._height === 0 ? this._nextValues : this._nextValues.map((n) => n.id)
+    const values = this._height === 0 ? this._nextValues : this._nextValues.map((n) => n.id)
     this._nextValues = []
     // divide up the values into this._width length blocks
-    let nodesAtHeight = Math.ceil(values.length / this._width)
+    const nodesAtHeight = Math.ceil(values.length / this._width)
     for (let i = 0; i < nodesAtHeight; i++) {
-      let data = values.slice(i * this._width, Math.min((i + 1) * this._width, values.length))
+      const data = values.slice(i * this._width, Math.min((i + 1) * this._width, values.length))
       yield new IAVector(this._store, this._width, this._height, data)
     }
     this._height++
@@ -425,28 +425,28 @@ function traverseValues (rootBlock) {
 }
 
 async function * performValuesTraversal (root) {
-  let traversal = traverseValues(root)
+  const traversal = traverseValues(root)
 
   while (true) {
     yield * traversal.values()
-    let id = traversal.traverse()
+    const id = traversal.traverse()
     if (!id) {
       break
     }
-    let child = await root.store.load(id)
+    const child = await root.store.load(id)
     traversal.next(child)
   }
 }
 
 async function * traverseNodes (root) {
-  let traversal = new ValuesTraversal(root)
+  const traversal = new ValuesTraversal(root)
 
   while (true) {
-    let id = traversal.traverse()
+    const id = traversal.traverse()
     if (!id) {
       break
     }
-    let child = await root.store.load(id)
+    const child = await root.store.load(id)
     yield { id, node: child }
     traversal.next(child)
   }
@@ -491,7 +491,7 @@ class ValuesTraversal {
         return null
       }
     }
-    let link = n.node.data[n.nextLink]
+    const link = n.node.data[n.nextLink]
     n.nextLink = this._nextLink(n.node, n.nextLink)
     return link
   }
@@ -505,9 +505,9 @@ class ValuesTraversal {
   next (block) {
     // if we have nulls, this is the first block, for the rest the width has to be consistent and the height has to
     // be correct for where we are in the tree
-    let expectedWidth = this._width === null ? block.width : this._width
-    let expectedHeight = this._height === null ? block.height : this._height - 1
-    let node = fromSerializable(dummyStore, 0, block, expectedWidth, expectedHeight)
+    const expectedWidth = this._width === null ? block.width : this._width
+    const expectedHeight = this._height === null ? block.height : this._height - 1
+    const node = fromSerializable(dummyStore, 0, block, expectedWidth, expectedHeight)
     this._height = node.height // height--, down toward the leaves
     if (this._width === null) {
       this._width = node.width
@@ -521,9 +521,9 @@ class ValuesTraversal {
    * @returns {Iterator} An iterator that yields value objects.
    */
   * values () {
-    let n = this._peek()
+    const n = this._peek()
     if (n && n.node.height === 0) {
-      for (let v of n.node.data) {
+      for (const v of n.node.data) {
         yield v
       }
     }
@@ -565,7 +565,7 @@ class GetTraversal {
    * {@link GetTraversal#value}) or the value doesn't exist.
    */
   traverse () {
-    let t = traverseGetOne(this._node, this._index)
+    const t = traverseGetOne(this._node, this._index)
 
     if (!t) { // probably OOB
       return null
@@ -618,13 +618,13 @@ function traverseGetOne (node, index) {
     return null
   }
 
-  let thisMax = node.width ** (node.height + 1)
+  const thisMax = node.width ** (node.height + 1)
   if (index > thisMax) { // OOB
     return null
   }
 
-  let children = node.width ** node.height
-  let thisIndex = Math.floor(index / children)
+  const children = node.width ** node.height
+  const thisIndex = Math.floor(index / children)
   if (thisIndex >= node.data.length) {
     return null
   }
@@ -634,9 +634,9 @@ function traverseGetOne (node, index) {
     return { value: node.data[thisIndex] }
   }
 
-  let nextId = node.data[thisIndex] // link to next
-  let nextHeight = node.height - 1
-  let nextIndex = index % children
+  const nextId = node.data[thisIndex] // link to next
+  const nextHeight = node.height - 1
+  const nextIndex = index % children
 
   return { nextId, nextHeight, nextIndex }
 }

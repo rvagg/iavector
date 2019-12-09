@@ -5,10 +5,10 @@ const { memoryStore } = require('./common')
 const iavector = require('../')
 
 describe('Traversals', async () => {
-  let store = memoryStore()
-  let data = Array.apply(null, new Array(101)).map((_, i) => `v${i}`)
-  let expectedIntermediateCount = Math.ceil(data.length / 4 ** 2) + Math.ceil(data.length / 4 ** 3) + 1
-  let expectedLeafCount = Math.ceil(data.length / 4)
+  const store = memoryStore()
+  const data = Array.apply(null, new Array(101)).map((_, i) => `v${i}`)
+  const expectedIntermediateCount = Math.ceil(data.length / 4 ** 2) + Math.ceil(data.length / 4 ** 3) + 1
+  const expectedLeafCount = Math.ceil(data.length / 4)
   let vector
   let rootBlock
 
@@ -30,31 +30,31 @@ describe('Traversals', async () => {
     let foundIntermediate = 0
     let foundLeaf = 0
 
-    let traversal = iavector.traverseValues(currentBlock)
+    const traversal = iavector.traverseValues(currentBlock)
 
     // first 3 should be blank as we traverse down
     for (let i = 0; i < 3; i++) {
-      assert.equals([ ...traversal.values() ], [])
+      assert.equals([...traversal.values()], [])
       foundIntermediate++
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       assert.equals(id, currentBlock.data[0])
       currentBlock = store.load(id)
       traversal.next(currentBlock)
     }
 
     // 4th should be a leaf with our first set of values
-    assert.equals([ ...traversal.values() ], expectedChunk)
+    assert.equals([...traversal.values()], expectedChunk)
     nextChunk()
     foundLeaf++
 
     while (true) {
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       currentBlock = store.load(id)
       if (!currentBlock) {
         break
       }
       traversal.next(currentBlock)
-      let values = [ ...traversal.values() ]
+      const values = [...traversal.values()]
       if (values.length) {
         assert.equals(values, expectedChunk, `found expected chunk of entries number ${chunkIndex + 1}`)
         nextChunk()
@@ -70,11 +70,11 @@ describe('Traversals', async () => {
 
   it('traverse get(0)', () => {
     let currentBlock = rootBlock
-    let traversal = iavector.traverseGet(currentBlock, 0)
+    const traversal = iavector.traverseGet(currentBlock, 0)
 
     for (let i = 0; i < 3; i++) {
       assert.isUndefined(traversal.value())
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       assert.equals(id, currentBlock.data[0])
       currentBlock = store.load(id)
       traversal.next(currentBlock)
@@ -86,11 +86,11 @@ describe('Traversals', async () => {
 
   it('traverse get(max)', () => {
     let currentBlock = rootBlock
-    let traversal = iavector.traverseGet(currentBlock, data.length - 1)
+    const traversal = iavector.traverseGet(currentBlock, data.length - 1)
 
     for (let i = 0; i < 3; i++) {
       assert.isUndefined(traversal.value())
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       assert.equals(id, currentBlock.data[currentBlock.data.length - 1])
       currentBlock = store.load(id)
       traversal.next(currentBlock)
@@ -102,12 +102,12 @@ describe('Traversals', async () => {
 
   it('traverse get(mid)', () => {
     let currentBlock = rootBlock
-    let index = Math.floor(data.length / 2)
-    let traversal = iavector.traverseGet(currentBlock, index)
+    const index = Math.floor(data.length / 2)
+    const traversal = iavector.traverseGet(currentBlock, index)
 
     for (let i = 0; i < 3; i++) {
       assert.isUndefined(traversal.value())
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       currentBlock = store.load(id)
       traversal.next(currentBlock)
     }
@@ -118,11 +118,11 @@ describe('Traversals', async () => {
 
   it('traverse size()', () => {
     let currentBlock = rootBlock
-    let traversal = iavector.traverseSize(currentBlock)
+    const traversal = iavector.traverseSize(currentBlock)
 
     for (let i = 0; i < 3; i++) {
       assert.isUndefined(traversal.size(), `no size at height ${currentBlock.height}`)
-      let id = traversal.traverse()
+      const id = traversal.traverse()
       assert.equals(id, currentBlock.data[currentBlock.data.length - 1])
       currentBlock = store.load(id)
       traversal.next(currentBlock)
