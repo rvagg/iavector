@@ -1,7 +1,7 @@
 {
   "name": "iavector",
   "version": "0.0.0",
-  "description": "An **I**mmutable **A**synchronous **Map**.",
+  "description": "An **I**mmutable **A**synchronous **Vector**.",
   "main": "iavector.js",
   "scripts": {
     "test:node": "hundreds mocha test/test-*.js",
@@ -23,6 +23,6 @@
   "dependencies": {},
   "repository": {
     "type": "git",
-    "url": "git://github.com/rvagg/iamap.git"
+    "url": "git://github.com/rvagg/iavector.git"
   }
 }
